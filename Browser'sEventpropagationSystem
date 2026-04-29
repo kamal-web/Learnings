@@ -1,0 +1,360 @@
+The browser’s event propagation system is the mechanism by which events travel through the DOM in three phases—capturing, target, and bubbling. It allows both child and parent elements to respond to events, enables event delegation for performance optimization, and provides a consistent and flexible way to manage user interactions. Frameworks like React rely on this system to implement their event handling efficiently.
+
+When an event occurs, the browser processes it in three phases: capturing, target, and bubbling. In the capturing phase, the event travels from the root of the DOM down to the target element, executing capture listeners. In the target phase, the event reaches the actual element where it originated. In the bubbling phase, the event propagates back up the DOM tree, triggering bubble listeners. This structured flow enables flexible and efficient event handling, including delegation and propagation control.
+
+The 3 Phases
+
+    1. Capturing Phase   (top → down)
+    2. Target Phase      (actual element)
+    3. Bubbling Phase    (bottom → up)
+
+    Why This Design Exists
+
+        This 3-phase model allows:
+
+            1. Early interception (capture)
+            2. Exact targeting (target)
+            3. Flexible handling (bubble)
+
+Why This System(EVENT PROPOGATION SYSTEM) is Needed
+
+1. Enables Parent Awareness: With propagation, Child clicked → Parent can also react ✅
+2. Enables Event Delegation (Performance) : 1 parent → handles all children ✅
+his is critical for:
+
+large lists
+dynamic UI
+
+3. Supports Flexible Control:
+You can:
+Stop propagation
+e.stopPropagation();
+
+Prevent default behavior
+e.preventDefault();
+
+    stopPropagation() prevents the event from propagating further through the DOM tree, stopping parent or ancestor handlers from executing. preventDefault() prevents the browser’s default behavior associated with the event, such as navigation or form submission. They operate independently—one controls event flow, and the other controls browser actions.
+
+    | Feature              | stopPropagation() | preventDefault()    |
+    | -------------------- | ----------------- | ------------------- |
+    | Purpose              | Stop event flow   | Stop browser action |
+    | Affects bubbling     | ✅ Yes             | ❌ No                |
+    | Affects capturing    | ✅ Yes             | ❌ No                |
+    | Prevents navigation  | ❌ No              | ✅ Yes               |
+    | Prevents form submit | ❌ No              | ✅ Yes               |
+
+
+4. Consistent Event Model
+
+Browser ensures:
+
+predictable order
+same behavior across elements
+
+Example
+-------
+
+<div id="grandparent">
+  <div id="parent">
+    <button id="child">Click Me</button>
+  </div>
+</div>
+
+🔹 Add Event Listeners
+----------------------
+
+const grandparent = document.getElementById("grandparent");
+const parent = document.getElementById("parent");
+const child = document.getElementById("child");
+
+// Capturing phase listeners
+grandparent.addEventListener("click", () => {
+  console.log("Grandparent Capture");
+}, true);
+
+parent.addEventListener("click", () => {
+  console.log("Parent Capture");
+}, true);
+
+child.addEventListener("click", () => {
+  console.log("Child Capture");
+}, true);
+
+// Bubbling phase listeners
+grandparent.addEventListener("click", () => {
+  console.log("Grandparent Bubble");
+});
+
+parent.addEventListener("click", () => {
+  console.log("Parent Bubble");
+});
+
+child.addEventListener("click", () => {
+  console.log("Child Bubble");
+});
+
+Execution Order
+---------------
+
+document → html → body → grandparent → parent → child
+
+Grandparent Capture
+Parent Capture
+Child Capture
+Child Bubble
+Parent Bubble
+Grandparent Bubble
+
+Step-by-Step Internal Flow
+==========================
+1. User clicks button
+2. Browser creates event object
+3. Event starts at document
+
+--- CAPTURE ---
+4. Travels down DOM tree
+5. Executes capture listeners
+
+--- TARGET ---
+6. Reaches button
+7. Executes target listeners
+
+--- BUBBLE ---
+8. Travels upward
+9. Executes bubble listeners
+10. Ends at document
+
+Important Observations
+======================
+🔸 1. Default Behavior
+Only bubbling phase runs by default
+Capture runs only if you specify { capture: true }
+
+In reality, the browser already knows all listeners and just executes them in a fixed order.
+
+How Browser Actually Knows Everything
+
+Every DOM node internally maintains a structure like:
+
+Element
+ ├── listeners:
+ │     click → [handler1, handler2]
+ │     capture click → [handler3]
+
+When you do:
+
+element.addEventListener("click", handler, true);
+
+Browser stores:
+
+eventType: "click"
+phase: capture
+handler: handler
+
+=========================== Flow
+Step 1: Event is Triggered
+
+User clicks button:
+
+<button id="child">
+
+👉 Browser creates event:
+
+{
+  type: "click",
+  target: childElement
+}
+
+👉 target is immediately known
+
+Because:
+
+The browser knows exactly which DOM node received the click (hit-testing).
+
+🔹 🔥 How Browser Finds the Target (Important)
+
+This is NOT magic.
+
+Browser uses layout + coordinates:
+
+Mouse click at (x, y)
+   ↓
+Browser checks layout tree
+   ↓
+Finds element at that position
+   ↓
+That becomes → event.target
+🔹 Step 2: Build Propagation Path
+
+Now browser builds a path:
+
+document → html → body → grandparent → parent → child
+
+👉 This is called:
+
+event path / propagation path
+
+🔹 Step 3: Execute in 3 Phases
+
+Now browser runs a loop over this path.
+
+🔹 Phase 1: Capturing (Top → Down)
+
+Browser iterates:
+
+document → html → body → parent → child
+
+At each node:
+
+if (node has capture listeners for "click") {
+   execute them
+}
+
+👉 No “asking”—just checking stored listeners
+
+🔹 Phase 2: Target Phase
+
+Now browser reaches:
+
+child (target)
+
+👉 It already knows:
+
+event.target === child
+🔥 What happens here
+
+Browser executes:
+
+1. Capture listeners on target
+2. Bubble listeners on target
+
+👉 That’s why target is a special phase
+
+🔹 Phase 3: Bubbling (Bottom → Up)
+
+Browser iterates backward:
+
+child → parent → grandparent → body → html → document
+
+At each node:
+
+if (node has bubble listeners) {
+   execute them
+}
+🔹 🔥 So What is “Target Phase” Really?
+
+It’s simply the moment when the browser reaches the node that was identified as event.target.
+
+When an event occurs, the browser first determines the target element using hit-testing based on the click coordinates. It then constructs the propagation path from the root to the target. The event is dispatched by iterating over this path—first in the capturing phase, then executing handlers on the target, and finally in the bubbling phase. The browser doesn’t ‘ask’ dynamically; it simply checks pre-registered listeners at each node and executes them in order.
+
+Timeline (Real Internal Flow)
+=============================
+1. User clicks screen
+2. Browser calculates coordinates
+3. Finds DOM element → target
+4. Builds propagation path
+5. Run CAPTURE phase (top → target)
+6. Run TARGET phase (at target node)
+7. Run BUBBLE phase (target → top)
+
+        Final Mental Model (Accurate)
+        =============================
+            Click happens
+            ↓
+            Browser finds exact element (target)
+            ↓
+            Builds path to root
+            ↓
+            Iterates path:
+            - forward (capture)
+            - at target
+            - backward (bubble)
+            ↓
+            Executes matching listeners
+
+
+        Where the “asking” idea comes from
+
+        When we say:
+
+        “Does anyone want to handle this?”
+
+        It actually means:
+
+        if (listener exists for this node + phase) {
+        run it
+        }
+
+Event propogation and Event Delegation
+======================================
+
+Event propagation is the process by which an event travels through the DOM tree.
+
+Event delegation is a technique where a parent element handles events for its children using propagation (bubbling).
+
+
+Event propagation is the browser’s mechanism for delivering events through the DOM in capturing, target, and bubbling phases. Event delegation is a technique that leverages propagation—typically the bubbling phase—to allow a parent element to handle events for its children, improving performance and scalability by reducing the number of event listeners.
+
+Why Delegation Uses Bubbling (Not Capture)
+
+Because bubbling is:
+
+Natural (default phase)
+Easier to reason about
+Matches UI hierarchy
+Could we use capture?
+
+Yes:
+
+parent.addEventListener("click", handler, true);
+
+But rarely used for delegation
+
+Where Performance Comes From (VERY IMPORTANT)
+
+This is the key part interviewers expect.
+
+🔥 1. Reduced Memory Usage
+
+Without delegation:
+
+1000 listeners → 1000 function references
+
+With delegation:
+
+1 listener → 1 function
+
+👉 Memory usage drastically reduced
+
+🔥 2. Faster Initial Render
+
+Without delegation:
+
+Loop + attach 1000 listeners
+
+With delegation:
+
+Attach 1 listener
+
+👉 Faster startup time
+
+🔥 3. Less Work for Browser Event System
+
+Browser maintains internal structures:
+
+Event Type → Listeners
+
+More listeners = more work:
+
+traversal
+matching
+execution
+🔥 4. Better Garbage Collection
+
+More listeners = more closures:
+
+btn.addEventListener("click", () => { ... });
+
+👉 Each closure consumes memory
+
+Delegation avoids this

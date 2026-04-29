@@ -1,0 +1,33 @@
+GitHub Pages (What & Why)
+
+GitHub Pages is a static website hosting service provided by GitHub.
+
+👉 What it does
+
+It hosts:
+
+HTML, CSS, JS
+Static assets (images, fonts)
+👉 What it does NOT do
+No backend (Node.js, Java, DB, etc.)
+No server-side rendering unless pre-built (like Next.js static export)
+🔧 How it works internally
+You push code to a GitHub repo
+GitHub picks a branch/folder:
+main / gh-pages / /docs
+
+It serves files via CDN at:
+
+https://username.github.io/repo-name/
+🧠 Types of GitHub Pages
+1. User/Org site
+username.github.io
+2. Project site
+username.github.io/project-name
+🔥 Real Use Cases
+Portfolio (perfect for you)
+Documentation sites
+Static blogs (Jekyll, Hugo)
+Frontend apps (React, Next static export)
+⚠️ Limitation
+No API execution → must use external backend (Node, Firebase, Supabase)
