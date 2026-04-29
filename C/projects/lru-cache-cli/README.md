@@ -49,7 +49,7 @@ Step 1: Understand LRU Cache (Core Idea)
 
 
 
-    1. Final Project Structure (Clean & Scalable)
+1. Final Project Structure (Clean & Scalable)
 lru-cache-cli/
 │
 ├── src/
