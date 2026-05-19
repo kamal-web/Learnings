@@ -1,7 +1,7 @@
 function makeAnargams(str1, str2){
     let charMap = {};
-    str1 = str1.toLowerCase().replace(/\s/g, '').split('').sort().join('');
-    str2 = str2.toLowerCase().replace(/\s/g, '').split('').sort().join('');
+    str1 = str1.toLowerCase().replace(/\s/g, '');
+    str2 = str2.toLowerCase().replace(/\s/g, '');
 
     console.log('formatStr1', str1);
     console.log('formatStr2',  str2);
@@ -16,7 +16,7 @@ function makeAnargams(str1, str2){
             
     }
     console.log('str2', charMap);
-    
+
     const minimalDeletionCount = Object.values(charMap).reduce((acc, item)=> acc+Math.abs(item), 0);
     return minimalDeletionCount;
     
